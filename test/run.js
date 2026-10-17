@@ -15,7 +15,7 @@ try {
   const tracePath = path.join(temp, 'result.deobf.luau');
   const key = '12_34';
   const chunkPath = path.join(temp, `result.chunk_${key}.luau`);
-  const input = 'local n = Instance.new("Frame");\nlocal value = factory({onClick = function() end});\n(function() end)()\nlocal i = 1;\nprint(n, value, i);\n';
+  const input = 'local n = Instance.new("Frame");\nlocal fixed = (12 * 8) + (4 - 1);\nlocal live = factory(12 * 8);\nlocal config = {alpha = 1, beta = 2, gamma = 3};\nlocal value = factory({onClick = function() end});\n(function() end)()\nlocal i = 1;\nprint(n, value, i, fixed, live, config);\n';
   fs.writeFileSync(chunkPath, input, 'latin1');
 
   const result = appendCapturedChunks('-- primary trace\n', tracePath);
@@ -23,6 +23,9 @@ try {
   assert.strictEqual(result.formattedCount, 1);
   assert.match(result.text, /Captured decrypted loadstring payload \(12_34\)/);
   assert.match(result.text, /local frame = Instance\.new\("Frame"\)/);
+  assert.match(result.text, /local fixed = 99;/);
+  assert.match(result.text, /local live = factory\(96\)/);
+  assert.match(result.text, /local config = \{\n\s+alpha = 1,/);
   assert.match(result.text, /local value = factory/);
   assert.match(result.text, /local i = 1/);
   assert.match(result.text, /\}\);/);

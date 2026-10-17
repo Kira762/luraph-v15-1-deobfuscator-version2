@@ -10,11 +10,17 @@ import backend
 import luauast
 import names
 import spacing
+import ast_simplify
 
 
 def beautify_text(text):
     """Reconstruct indentation, infer names where supported, and normalize spacing."""
-    rendered = backend.run_big_stack(lambda: luauast.render(luauast.parse(text)))
+    def parse_simplify_render():
+        root = luauast.parse(text)
+        root, _fold_count = ast_simplify.simplify(root)
+        return luauast.render(root)
+
+    rendered = backend.run_big_stack(parse_simplify_render)
 
     if not os.environ.get("DEVIRT_NO_NAMES"):
         try:

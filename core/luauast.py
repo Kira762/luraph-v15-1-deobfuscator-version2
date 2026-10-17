@@ -99,12 +99,18 @@ class Printer:
             for it in e["items"]:
                 k = it["kind"]
                 if k == "item":
-                    items.append(self.expr(it["value"], depth))
+                    items.append(self.expr(it["value"], depth + 1))
                 elif k == "record":
-                    items.append(it["key"]["value"] + " = " + self.expr(it["value"], depth))
+                    items.append(it["key"]["value"] + " = " + self.expr(it["value"], depth + 1))
                 else:
-                    items.append("[" + self.expr(it["key"], depth) + "] = " + self.expr(it["value"], depth))
-            return "{" + ", ".join(items) + "}"
+                    items.append("[" + self.expr(it["key"], depth + 1) + "] = "
+                                 + self.expr(it["value"], depth + 1))
+            inline = "{" + ", ".join(items) + "}"
+            if len(items) <= 2 and "\n" not in inline and len(inline) <= 88:
+                return inline
+            pad = self.ind * (depth + 1)
+            close = self.ind * depth
+            return "{\n" + ",\n".join(pad + item for item in items) + "\n" + close + "}"
         if t == "AstExprFunction":
             return self.function(e, "function", depth)
         if t == "AstExprInterpString":
