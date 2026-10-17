@@ -130,6 +130,12 @@ node deob.js input.lua --no-devirt
 node deob.js input.lua --detect
 ```
 
+For Luraph v15 scripts that decrypt code through `loadstring`, captured plaintext
+chunks are now formatted and appended to the output under clearly labeled
+`Captured decrypted loadstring payload` sections. This keeps payloads available
+even when the VM bootstrap itself cannot be fully lifted. The obfuscator destroys
+original variable names and comments, so those cannot be restored automatically.
+
 > **Note:** If your system uses a different Python command (`py`, `python3`, or a virtual environment binary), set the `PYTHON_BIN` environment variable:
 > ```bash
 > set PYTHON_BIN=py        # Windows

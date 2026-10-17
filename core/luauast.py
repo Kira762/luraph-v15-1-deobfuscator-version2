@@ -149,6 +149,7 @@ class Printer:
             self.stat(s, depth)
 
     def stat(self, s, depth):
+        line_start = len(self.lines)
         t = s["type"]
         if t == "AstStatBlock":
             self.emit(depth, "do")
@@ -215,6 +216,11 @@ class Printer:
             pass
         else:
             raise ValueError("unknown statement " + t)
+
+        # Newlines do not terminate statements in Luau. Add explicit separators
+        # so a following parenthesized expression cannot attach to this statement.
+        if len(self.lines) > line_start:
+            self.lines[-1] = self.lines[-1].rstrip(";") + ";"
 
 def render(node, indent="  "):
     p = Printer(indent)

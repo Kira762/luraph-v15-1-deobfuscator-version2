@@ -3,6 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { appendCapturedChunks, clearCapturedChunks } = require('./src/captured_chunks');
 const detectModule = require('./src/detect');
 const driver = require('./src/driver');
 
@@ -184,6 +185,7 @@ async function processFile(absInput, args) {
 
     const job = new Job(absInput, jobSource, args, tracePath, args.debug, plugin.label);
     job.sourcePath = sourcePath;
+    clearCapturedChunks(tracePath);
 
     let result;
     if (plugin.name === 'luarmor_client') {
@@ -202,6 +204,11 @@ async function processFile(absInput, args) {
     if (final && result && fs.existsSync(result)) {
       let content = fs.readFileSync(result, 'utf8');
       content = content.replace(/^(\s*--(?:[ \t]*(?:Deobfuscated by|Detected obfuscation|Local names are inferred|source:|NOTE: reconstructed|during the trace)[^\n]*\n?|\s*\n))+/, '');
+      const captured = appendCapturedChunks(content, tracePath);
+      content = captured.text;
+      if (captured.count) {
+        process.stderr.write(`[+] appended ${captured.count} captured loadstring payload chunk(s) (${captured.formattedCount} formatted)\n`);
+      }
       fs.writeFileSync(final, content, 'utf8');
       process.stderr.write(`[+] result: ${final}\n`);
       return final;
