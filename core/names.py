@@ -30,7 +30,7 @@ GLOBAL_CALLS = {"tick": "now", "time": "now", "os.clock": "now", "os.time": "now
                 "coroutine.create": "thread", "task.spawn": "thread", "task.delay": "thread",
                 "Instance.new": "instance", "newproxy": "proxy", "rawget": "value", "next": "key"}
 
-WEAK = {"str", "n", "tbl", "flag", "fn", "value", "key", "kind", "num", "obj", "result"}
+WEAK = {"str", "n", "tbl", "flag", "fn", "value", "key", "kind", "num", "obj", "result", "arg"}
 
 SIGNAL_PARAMS = {
     "PlayerAdded": ["player"], "PlayerRemoving": ["player"],
@@ -502,6 +502,21 @@ class Namer:
                 return nm
         return info.get("label") or "v"
 
+    def rename_candidate(self, info):
+        """Rename register-like names, plus short names with a strong semantic hint.
+
+        A one-character identifier is not enough evidence by itself: names such
+        as `i` and `x` can be intentional. Only replace it when inference gives
+        a distinct, non-generic name from an API, property, label, or structure.
+        """
+        name = info["name"]
+        if GENERATED.match(name):
+            return True
+        if len(name) != 1 or name == "_":
+            return False
+        base = self.base_name(info)
+        return bool(base and base != name and base not in WEAK)
+
     def run(self):
         self.collect()
         taken = {}          
@@ -509,7 +524,7 @@ class Namer:
         for key in self.order:
             info = self.locals[key]
             info["refs"].sort()
-            if not GENERATED.match(info["name"]):
+            if not self.rename_candidate(info):
                 info["new"] = info["name"]
                 taken.setdefault(info["name"], []).append(info)
         for key in sorted(self.order, key=lambda k: self.locals[k]["decl"]):     
@@ -549,18 +564,28 @@ class Namer:
         for info in self.locals.values():
             if info["new"] == info["name"]:
                 continue
-            for (a, b) in info["spans"]:
+            spans = info["spans"]
+            total += len(spans)
+            # Validate every declaration/reference span before editing any of
+            # them. A local is either renamed consistently or left untouched.
+            valid = True
+            for a, b in spans:
+                if a[0] >= len(lines):
+                    valid = False
+                    break
+                source_line = lines[a[0]].encode("utf-8")
+                if source_line[a[1]:b[1]] != info["name"].encode("utf-8"):
+                    valid = False
+                    break
+            if not valid:
+                skipped += len(spans)
+                continue
+            for (a, b) in spans:
                 edits.setdefault(a[0], []).append((a[1], b[1], info["name"], info["new"]))
-                total += 1
         for ln, lst in edits.items():
             s = lines[ln].encode("utf-8")
             for c0, c1, old, new in sorted(lst, reverse=True):
-                if s[c0:c1] == old.encode("utf-8"):
-                    s = s[:c0] + new.encode("utf-8") + s[c1:]
-                else:
-                    # byte offsets drifted (e.g. an earlier edit on this line):
-                    # renaming only one half would leave an undefined global.
-                    skipped += 1
+                s = s[:c0] + new.encode("utf-8") + s[c1:]
             lines[ln] = s.decode("utf-8")
         if skipped:
             print("[!] naming: %d/%d rename(s) skipped (source offset drift); "

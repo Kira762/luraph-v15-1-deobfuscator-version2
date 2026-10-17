@@ -15,15 +15,18 @@ try {
   const tracePath = path.join(temp, 'result.deobf.luau');
   const key = '12_34';
   const chunkPath = path.join(temp, `result.chunk_${key}.luau`);
-  const input = 'local value = factory({onClick = function() end});\n(function() end)()\n';
+  const input = 'local n = Instance.new("Frame");\nlocal value = factory({onClick = function() end});\n(function() end)()\nlocal i = 1;\nprint(n, value, i);\n';
   fs.writeFileSync(chunkPath, input, 'latin1');
 
   const result = appendCapturedChunks('-- primary trace\n', tracePath);
   assert.strictEqual(result.count, 1);
   assert.strictEqual(result.formattedCount, 1);
   assert.match(result.text, /Captured decrypted loadstring payload \(12_34\)/);
+  assert.match(result.text, /local frame = Instance\.new\("Frame"\)/);
   assert.match(result.text, /local value = factory/);
+  assert.match(result.text, /local i = 1/);
   assert.match(result.text, /\}\);/);
+  assert.doesNotMatch(result.text, /\n[ \t]*\n[ \t]*\n/);
 
   const combinedPath = path.join(temp, 'combined.luau');
   fs.writeFileSync(combinedPath, result.text, 'utf8');

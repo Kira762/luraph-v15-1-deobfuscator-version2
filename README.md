@@ -133,8 +133,11 @@ node deob.js input.lua --detect
 For Luraph v15 scripts that decrypt code through `loadstring`, captured plaintext
 chunks are now formatted and appended to the output under clearly labeled
 `Captured decrypted loadstring payload` sections. This keeps payloads available
-even when the VM bootstrap itself cannot be fully lifted. The obfuscator destroys
-original variable names and comments, so those cannot be restored automatically.
+even when the VM bootstrap itself cannot be fully lifted. Captured chunks also go
+through semantic local-name inference and AST-based beautification; ambiguous names
+are kept rather than guessed. The obfuscator destroys original identifiers and
+comments, so those cannot be restored automatically. See
+[Readable output: local naming and formatting](docs/READABLE_OUTPUT.md) for details.
 
 > **Note:** If your system uses a different Python command (`py`, `python3`, or a virtual environment binary), set the `PYTHON_BIN` environment variable:
 > ```bash

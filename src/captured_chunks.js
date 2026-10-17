@@ -31,7 +31,7 @@ function clearCapturedChunks(tracePath) {
 }
 
 function formatChunk(file) {
-  const formatter = path.join(__dirname, '..', 'core', 'luauast.py');
+  const formatter = path.join(__dirname, '..', 'core', 'beautify.py');
   return execFileSync(getPythonBin(), [formatter, file], {
     encoding: 'latin1',
     maxBuffer: MAX_FORMAT_BUFFER,

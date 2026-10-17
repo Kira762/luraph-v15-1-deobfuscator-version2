@@ -55,6 +55,23 @@ def space(text):
             out.append("")
     return "\n".join(out)
 
+def normalize_blank_lines(text, max_blank=1):
+    """Trim trailing whitespace and cap blank-line runs in rendered source."""
+    out = []
+    blank = 0
+    for line in text.splitlines():
+        line = line.rstrip()
+        if not line:
+            if out and blank < max_blank:
+                out.append("")
+            blank += 1
+        else:
+            out.append(line)
+            blank = 0
+    while out and not out[-1]:
+        out.pop()
+    return "\n".join(out) + ("\n" if out else "")
+
 if __name__ == "__main__":
     import sys
     p = sys.argv[1]
